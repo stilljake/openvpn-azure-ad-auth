@@ -12,7 +12,7 @@ This is a standalone script which relies on the [ADAL](https://github.com/AzureA
 
 Configuration is simple! After [creating a "native" application](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-integrating-applications#adding-an-application) in Azure Active Directory, take note of its Application ID.
 
-Create a `config.yaml` file according to the following example:
+Create a `config.yaml` file according to the following example, and place it alongside the script:
 
 ```yaml
 tenant_id: {{Your AAD tenant ID}}
