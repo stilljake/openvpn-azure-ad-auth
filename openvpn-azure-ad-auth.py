@@ -44,7 +44,7 @@ except KeyError as err:
 
 context = adal.AuthenticationContext(authority_url)
 
-if len(sys.argv) > 1 and sys.argv[1] == "--consent":
+if len(sys.argv) == 2 and sys.argv[1] == "--consent":
     try:
         code = context.acquire_user_code(resource, client_id)
         print code['message']
@@ -93,10 +93,21 @@ while True:
     resp.encoding = "utf-8-sig"
     data = resp.json()
 
-    # Exit early if we've found a permitted group
-    for group in [v['displayName'] for v in data['value']]:
-        if group in config['permitted_groups']:
-            success()
+    if 'odata.error' in data:
+        failure("Could not get graph data! {}".format(resp))
+
+    try:
+        # Exit early if we've found a permitted group
+        for group in [v['displayName'] for v in data['value']]:
+            if group in config['permitted_groups']:
+                success()
+    except KeyError as err:
+        if err.message == 'value':
+            raise RuntimeError("no 'value' key in returned group data {}".format(resp.text))
+        elif err.message == 'displayName':
+            print "no 'displayName' for value v: {}".format(v)
+        else:
+            raise err
 
     if "odata.nextLink" in data:
         graph_url = "https://graph.windows.net/{}/{}&api-version=1.6".format(
