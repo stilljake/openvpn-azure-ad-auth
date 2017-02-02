@@ -94,7 +94,7 @@ while True:
     data = resp.json()
 
     if 'odata.error' in data:
-        failure("Could not get graph data! {}".format(resp))
+        failure("Could not get graph data! {}".format(data))
 
     try:
         # Exit early if we've found a permitted group
