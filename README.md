@@ -17,8 +17,9 @@ Create a `config.yaml` file according to the following example, and place it alo
 ```yaml
 tenant_id: {{Your AAD tenant ID}}
 client_id: {{Your new AAD Application's ID}}
-permitted_groups: # this list is optional!
+permitted_groups: # optional; defaults to allow-all
   - {{AAD group displayName}}
+log_level: DEBUG  # optional; defaults to INFO
 ```
 
 OpenVPN Configuration
