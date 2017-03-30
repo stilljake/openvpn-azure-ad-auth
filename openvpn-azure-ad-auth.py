@@ -100,7 +100,7 @@ def read_token_cache(token_cache_file):
     token_cache = None
     try:
         logger.debug("reading token cache from %s", token_cache_file)
-        token_cache_fd = os.open(token_cache_file, os.O_CREAT | os.O_SHLOCK, 0o600)
+        token_cache_fd = os.open(token_cache_file, os.O_CREAT, 0o600)
         with os.fdopen(token_cache_fd, 'r') as token_cache_fh:
             token_cache = adal.TokenCache(state=token_cache_fh.read())
     except IOError as err:
@@ -119,7 +119,7 @@ def save_token_cache(token_cache_file, token_cache):
     try:
         token_cache_fd = os.open(
             token_cache_file,
-            os.O_TRUNC | os.O_CREAT | os.O_EXLOCK | os.O_WRONLY,
+            os.O_TRUNC | os.O_CREAT | os.O_WRONLY,
             0o600
         )
         with os.fdopen(token_cache_fd, 'w') as token_cache_fh:
