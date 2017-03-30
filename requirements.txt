@@ -1,3 +1,5 @@
 adal>=0.4.4
 PyYAML>=3.12
 requests>=2.13.0
+backports.pbkdf2>=0.1
+

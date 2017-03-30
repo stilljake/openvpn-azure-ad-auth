@@ -8,8 +8,9 @@ an authentication token from Azure AD.
 #pylint: disable=invalid-name
 
 import binascii
-import hashlib
-from hmac import compare_digest
+#import hashlib
+#from hmac import compare_digest
+from backports.pbkdf2 import pbkdf2_hmac, compare_digest
 import logging
 import os
 import sys
@@ -187,7 +188,7 @@ def get_token(context, resource, username, password, client_id):
 
 
 def hash_password(token, password):
-    return binascii.hexlify(hashlib.pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
+    return binascii.hexlify(pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
 
 def check_group_membership(token, tenant_id, permitted_groups):
     graph_url = "https://graph.windows.net/me/memberOf?api-version=1.6"
