@@ -68,7 +68,7 @@ except KeyError:
 
 if token_cache_file:
     try:
-        logger.info("reading token cache from %s", token_cache_file)
+        logger.debug("reading token cache from %s", token_cache_file)
         token_cache_fd = os.open(token_cache_file, os.O_CREAT | os.O_SHLOCK, 0o600)
         with os.fdopen(token_cache_fd, 'r') as token_cache_fh:
             token_cache = adal.TokenCache(state=token_cache_fh.read())
@@ -80,7 +80,7 @@ if token_cache_file:
         os.close(token_cache_fd)
         context = adal.AuthenticationContext(authority_url)
 else:
-    logger.info("no token cache specified")
+    logger.debug("no token cache specified")
     token_cache = None
     context = adal.AuthenticationContext(authority_url)
 
@@ -107,6 +107,7 @@ try:
 except KeyError:
     logger.error("Environment variables `username` and `password` must be set")
     failure()
+logger.info("request recieved to authenticate user %s", username)
 
 
 def hash_password(token, password):
@@ -128,6 +129,7 @@ try:
             password,
             client_id
         )
+        logger.info("authenticated user %s from AAD request", username)
         if token_cache:
             try:
                 token['passwordHash'] = hash_password(token, password)
@@ -138,7 +140,7 @@ try:
                 )
                 with os.fdopen(token_cache_fd, 'w') as token_cache_fh:
                     token_cache_fh.write(token_cache.serialize())
-                    logger.info("wrote token cache info to %s", token_cache_file)
+                    logger.debug("wrote token cache info to %s", token_cache_file)
             except IOError as err:
                 logger.warning(
                     "could not write to token cache file %s: %s",
@@ -150,7 +152,7 @@ except adal.adal_error.AdalError as err:
 
 
 if 'permitted_groups' not in config:
-    logger.info("no group restriction specified")
+    logger.debug("no group restriction specified")
     success()
 
 groups = []
@@ -163,7 +165,7 @@ while True:
         "Content-Type": "application/json"
     }
     try:
-        logger.info("requesting a batch of group info")
+        logger.debug("requesting a batch of group info")
         resp = requests.get(
             graph_url,
             headers=header
