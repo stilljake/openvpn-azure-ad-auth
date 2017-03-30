@@ -7,6 +7,9 @@ an authentication token from Azure AD.
 
 #pylint: disable=invalid-name
 
+import binascii
+import hashlib
+from hmac import compare_digest
 import logging
 import os
 import sys
@@ -41,7 +44,10 @@ except yaml.scanner.ScannerError as err:
     logger.critical("Config file %s failed to load: %s", config_file, err)
     failure()
 
-log_level = getattr(logging, config['log_level'].upper(), None) if 'log_level' in config else logging.INFO
+if 'log_level' in config:
+    log_level = getattr(logging, config['log_level'].upper(), None)
+else:
+    log_level = logging.INFO
 logger.setLevel(log_level)
 adal.set_logging_options({'level': log_level})
 
@@ -54,7 +60,30 @@ except KeyError as err:
     logger.error("invalid config file! could not find %s", err)
     failure()
 
-context = adal.AuthenticationContext(authority_url)
+
+try:
+    token_cache_file = config['token_cache_file']
+except KeyError:
+    token_cache_file = None
+
+if token_cache_file:
+    try:
+        logger.info("reading token cache from %s", token_cache_file)
+        token_cache_fd = os.open(token_cache_file, os.O_CREAT | os.O_SHLOCK, 0o600)
+        with os.fdopen(token_cache_fd, 'r') as token_cache_fh:
+            token_cache = adal.TokenCache(state=token_cache_fh.read())
+        context = adal.AuthenticationContext(authority_url, cache=token_cache)
+    except IOError as err:
+        logger.error(
+            "could not open token cache file %s: %s. continuing without cache",
+            token_cache_file, err)
+        os.close(token_cache_fd)
+        context = adal.AuthenticationContext(authority_url)
+else:
+    logger.info("no token cache specified")
+    token_cache = None
+    context = adal.AuthenticationContext(authority_url)
+
 
 if len(sys.argv) == 2 and sys.argv[1] == "--consent":
     try:
@@ -80,18 +109,48 @@ except KeyError:
     failure()
 
 
+def hash_password(token, password):
+    return binascii.hexlify(hashlib.pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
+
 try:
-    token = context.acquire_token_with_username_password(
-        resource,
-        username,
-        password,
-        client_id
-    )
+    # Get a token from the cache (avoids a round-trip to AAD if the cached token hasn't expired)
+    token = context.acquire_token(resource, username, client_id)
+    if token is not None:
+        password_hmac = hash_password(token, password)
+        if not compare_digest(bytes(password_hmac), bytes(token['passwordHash'])):
+            raise adal.adal_error.AdalError("bad password")
+        logger.info("authenticated user %s from cache", username)
+    else:
+        logger.debug("could not get a token from cache; acquiring from AAD")
+        token = context.acquire_token_with_username_password(
+            resource,
+            username,
+            password,
+            client_id
+        )
+        if token_cache:
+            try:
+                token['passwordHash'] = hash_password(token, password)
+                token_cache_fd = os.open(
+                    token_cache_file,
+                    os.O_CREAT | os.O_EXLOCK | os.O_WRONLY,
+                    0o600
+                )
+                with os.fdopen(token_cache_fd, 'w') as token_cache_fh:
+                    token_cache_fh.write(token_cache.serialize())
+                    logger.info("wrote token cache info to %s", token_cache_file)
+            except IOError as err:
+                logger.warning(
+                    "could not write to token cache file %s: %s",
+                    token_cache_file, err)
+                os.close(token_cache_fd)
 except adal.adal_error.AdalError as err:
     logger.info("User %s failed to authenticate: %s", username, err)
     failure()
 
+
 if 'permitted_groups' not in config:
+    logger.info("no group restriction specified")
     success()
 
 groups = []
@@ -104,6 +163,7 @@ while True:
         "Content-Type": "application/json"
     }
     try:
+        logger.info("requesting a batch of group info")
         resp = requests.get(
             graph_url,
             headers=header
@@ -122,6 +182,7 @@ while True:
         # Exit early if we've found a permitted group
         for group in [v['displayName'] for v in data['value']]:
             if group in config['permitted_groups']:
+                logger.info("user %s belongs to approved group %s", username, group)
                 success()
     except KeyError as err:
         if err.message == 'value':
