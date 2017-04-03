@@ -165,7 +165,10 @@ def get_token(context, resource, username, password, client_id):
     """
     try:
         # Get a token from the cache (avoids a round-trip to AAD if the cached token hasn't expired)
-        token = context.acquire_token(resource, username, client_id)
+        try:
+            token = context.acquire_token(resource, username, client_id)
+        except adal.adal_error.AdalError as err: # see issue #3
+            token = None
         if token is not None:
             password_hmac = hash_password(token, password)
             if compare_digest(bytes(password_hmac), bytes(token['passwordHash'])):
