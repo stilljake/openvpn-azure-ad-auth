@@ -1,5 +1,7 @@
-adal>=0.4.4
+pyparsing
+six>=1.6.0
+appdirs
 PyYAML>=3.12
 requests>=2.13.0
+adal>=0.4.4
 backports.pbkdf2>=0.1
-
