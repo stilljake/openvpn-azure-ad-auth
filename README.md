@@ -8,7 +8,7 @@ and authorization using Azure Active Directory.
 Installation and Configuration
 ------------------------------
 
-This is a standalone script which relies on the [ADAL](https://github.com/AzureAD/azure-activedirectory-library-for-python), [PyYAML](http://pyyaml.org), and [requests](http://docs.python-requests.org/en/master/) libraries.
+This is a standalone script which relies on the [ADAL](https://github.com/AzureAD/azure-activedirectory-library-for-python), [PyYAML](http://pyyaml.org), and [requests](http://docs.python-requests.org/en/master/) libraries. Ensure that the required libraries are installed in a system-wide location so that they can be used by the OpenVPN Daemon.
 
 Configuration is simple! After [creating a "native" application](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-integrating-applications#adding-an-application) in Azure Active Directory, take note of its Application ID.
 
@@ -45,6 +45,7 @@ $ ./openvpn-azure-ad-auth.py --consent
 To sign in, use a web browser to open the page https://aka.ms/devicelogin and enter the code xxxxxxxxx to authenticate.
 $
 ```
+Alternatively, you can grant permissions for the entire Azure AD via the application's settings page in the Azure admin portal. 
 
 Token Caching
 -------------
