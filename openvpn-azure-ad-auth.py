@@ -21,7 +21,9 @@ import yaml
 
 loggerName = __name__
 logging.basicConfig(
-    format='%(asctime) 25s openvpn-azure-aad-auth %(levelname) 7s %(pathname)s %(module)s: %(message)s'
+    format='%(asctime) 25s openvpn-azure-aad-auth %(levelname) 7s %(pathname)s %(module)s: %(message)s',
+    stream=sys.stdout,
+    level=logging.DEBUG
 )
 logger = logging.getLogger(loggerName)
 
