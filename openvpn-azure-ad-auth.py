@@ -45,7 +45,7 @@ def main(config_file):
 
     try:
         with open(config_file) as cfg:
-            config = yaml.load(cfg.read())
+            config = yaml.load(cfg.read(), Loader=yaml.Loader)
     except IOError as err:
         logger.critical("Could not open config file %s", config_file)
         failure()
@@ -134,7 +134,7 @@ def save_token_cache(token_cache_file, token_cache):
 def obtain_consent(context, resource, client_id):
     try:
         code = context.acquire_user_code(resource, client_id)
-        print code['message']
+        print(code['message'])
         _ = context.acquire_token_with_device_code(resource, code, client_id)
     except adal.adal_error.AdalError as err:
         logger.error("Failed to get consent %s", err)
@@ -191,7 +191,11 @@ def get_token(context, resource, username, password, client_id):
 
 
 def hash_password(token, password):
-    return binascii.hexlify(pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
+    # return binascii.hexlify(pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
+    password_bytes = bytearray(password.encode('utf-8'))
+    salt_bytes = bytearray(token['accessToken'].encode('utf-8'))
+    value = pbkdf2_hmac('sha512', password_bytes, salt_bytes, 128000)
+    return binascii.hexlify(value)
 
 def check_group_membership(token, tenant_id, permitted_groups):
     graph_url = "https://graph.windows.net/me/memberOf?api-version=1.6"
