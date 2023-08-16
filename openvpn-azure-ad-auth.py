@@ -191,7 +191,6 @@ def get_token(context, resource, username, password, client_id):
 
 
 def hash_password(token, password):
-    # return binascii.hexlify(pbkdf2_hmac('sha512', password, token['accessToken'], 128000))
     password_bytes = bytearray(password.encode('utf-8'))
     salt_bytes = bytearray(token['accessToken'].encode('utf-8'))
     value = pbkdf2_hmac('sha512', password_bytes, salt_bytes, 128000)
